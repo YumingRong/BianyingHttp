@@ -1,40 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
+using System.IO;
 using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Text.Json;
+using System.Net;
 
 namespace WindowsFormsApp1
 {
     public partial class Form1 : Form
     {
-        int app = 0;
         public Form1()
         {
             InitializeComponent();
         }
 
-        delegate void updateStatusStripDelegate(String obj);
-        private void updateStatusWordInDelegate(string text)
-        {
-            textResult.Text = text;
-        }
-
-        private void updateStatusWordInThread(string text)
-        {
-            updateStatusStripDelegate d = new updateStatusStripDelegate(updateStatusWordInDelegate);
-            this.Invoke(d, text);
-        }
-
         delegate void updateColorDelegate(Color obj);
         private void updateColorInDelegate(Color c)
         {
-            textResult.BackColor = c;
+            textHttp.BackColor = c;
         }
 
         private void updateColorInThread(Color c)
@@ -46,23 +34,21 @@ namespace WindowsFormsApp1
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            comboBox1.Items.AddRange(System.IO.Ports.SerialPort.GetPortNames());
         }
 
         private void buttonConnect_Click(object sender, EventArgs e)
         {
-            if (serialPort1.IsOpen)
-            {
-                serialPort1.Close();
-            }
-            serialPort1.PortName = comboBox1.SelectedItem.ToString();
-            serialPort1.Encoding = System.Text.Encoding.GetEncoding("UTF-8");
-            serialPort1.Open();
         }
 
-        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        private static string SendRequest(string url)
         {
-            comboBox1.Items.AddRange(System.IO.Ports.SerialPort.GetPortNames());
+            url = "http://" + url + ":8080/json";
+            HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url);
+            webRequest.Method = "GET";
+            HttpWebResponse webResponse = (HttpWebResponse)webRequest.GetResponse();
+            StreamReader sr = new StreamReader(webResponse.GetResponseStream());
+            return sr.ReadToEnd();
+
         }
 
 
@@ -143,106 +129,43 @@ namespace WindowsFormsApp1
 
             public int Compare(DetectionObject x, DetectionObject y)
             {
-                return x.centerX.CompareTo(y.centerX) * -1;
+                return x.centerX.CompareTo(y.centerX);
             }
 
 
         }
 
-        private void serialPort1_DataReceived(object sender, System.IO.Ports.SerialDataReceivedEventArgs e)
-        {
-            while (serialPort1.BytesToRead > 0)
-            {
-
-                string indata = serialPort1.ReadLine().Trim();
-                if (indata.StartsWith("{"))
-                {
-                    updateColorInThread(buttonConnect.BackColor);
-                    updateStatusWordInThread("");
-                    try
-                    {
-                        DetectionResults Result = JsonSerializer.Deserialize<DetectionResults>(indata);
-                        if (Result.results.Count() > 0)
-                        {
-                            string S = "";
-                            switch (app)
-                            {
-                                
-                                case 1:
-                                    DetectionObject Angle_Start= null, Angle_End = null;
-                                    foreach (DetectionObject obj in Result.results)
-                                    {
-                                        if (obj.name.StartsWith("定位")) {
-                                            Angle_Start = obj;
-                                        } else if (obj.name.EndsWith("齿轮"))
-                                        {
-                                            Angle_End = obj;
-                                        }
-                                    }
-                                    if (Angle_Start != null && Angle_End != null)
-                                    {
-                                        double x = Angle_Start.centerX - Angle_End.centerX;
-                                        double y = Angle_Start.centerY - Angle_End.centerY;
-                                        if( Angle_Start.centerX==0  && Angle_End.centerX==0 && Angle_Start.centerY ==0 &&  Angle_End.centerY == 0)
-                                        {
-                                            x = Angle_Start.left - Angle_End.left;
-                                            y = Angle_Start.top - Angle_End.top;
-                                        }
-                                        double a = Math.Atan2(y, x);
-                                        a = -Math.Round(a / Math.PI * 180,1);
-                                        S = a.ToString();
-                                    }
-                                    break;
-                                default:
-                                    
-                                    Result.results.Sort(new XComparer());
-                                    foreach (DetectionObject obj in Result.results)
-                                    {
-                                        S += obj.name;
-                                    }
-                                    
-                                    break;
-                            }
-                            updateStatusWordInThread(S);
-                        }
-                    }
-                    catch
-                    {
-                        updateColorInThread(Color.LightPink);
-                    }
-
-                }
-                else if (indata == "~TakePhoto")
-                {
-                    updateColorInThread(Color.LightBlue);
-                }
-            }
-
-        }
 
         private void buttonIdentify_Click(object sender, EventArgs e)
         {
-            //textBox1.Text = "DHB3022";
-            if (serialPort1.IsOpen)
+            textHttp.Text = SendRequest(comboBox1.Text);
+            string indata = textHttp.Text.Trim();
+            if (indata.StartsWith("{"))
             {
-                buttonIdentify.BackColor = Color.LightGreen;
-                serialPort1.WriteLine("p\r\n");
-                serialPort1.WriteLine("b0");
+                try
+                {
+                    DetectionResults Result = JsonSerializer.Deserialize<DetectionResults>(indata);
+                    if (Result.results.Count() > 0)
+                    {
+                        StringBuilder sb = new StringBuilder();
+                        Result.results.Sort(new XComparer());
+                        foreach (DetectionObject obj in Result.results)
+                            sb.Append(obj.name);
+                        labelResult.Text = sb.ToString();
+                    }
+                }
+                catch
+                {
+                    updateColorInThread(Color.LightPink);
+                }
+
             }
-            else
+            else if (indata == "~TakePhoto")
             {
-                buttonIdentify.BackColor = buttonConnect.BackColor;
+                updateColorInThread(Color.LightBlue);
             }
+
         }
 
-        private void radioSort_CheckedChanged(object sender, EventArgs e)
-        {
-            app = 0;
-        }
-
-        private void radioAngle_CheckedChanged(object sender, EventArgs e)
-        {
-            app = 1;
-        }
     }
 }
