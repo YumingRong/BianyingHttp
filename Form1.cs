@@ -40,13 +40,13 @@ namespace WindowsFormsApp1
         {
         }
 
-        private static string SendRequest(string url)
+        private static string SendRequest(string url,Encoding encoding)
         {
             url = "http://" + url + ":8080/json";
             HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url);
             webRequest.Method = "GET";
             HttpWebResponse webResponse = (HttpWebResponse)webRequest.GetResponse();
-            StreamReader sr = new StreamReader(webResponse.GetResponseStream());
+            StreamReader sr = new StreamReader(webResponse.GetResponseStream(), encoding);
             return sr.ReadToEnd();
 
         }
@@ -138,7 +138,7 @@ namespace WindowsFormsApp1
 
         private void buttonIdentify_Click(object sender, EventArgs e)
         {
-            textHttp.Text = SendRequest(comboBox1.Text);
+            textHttp.Text = SendRequest(comboBox1.Text, Encoding.UTF8);
             string indata = textHttp.Text.Trim();
             if (indata.StartsWith("{"))
             {

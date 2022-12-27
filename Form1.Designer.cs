@@ -39,7 +39,7 @@
             // textHttp
             // 
             this.textHttp.Font = new System.Drawing.Font("SimSun", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.textHttp.Location = new System.Drawing.Point(37, 171);
+            this.textHttp.Location = new System.Drawing.Point(37, 185);
             this.textHttp.Margin = new System.Windows.Forms.Padding(4);
             this.textHttp.Multiline = true;
             this.textHttp.Name = "textHttp";
@@ -50,7 +50,7 @@
             // buttonIdentify
             // 
             this.buttonIdentify.Font = new System.Drawing.Font("SimSun", 21.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.buttonIdentify.Location = new System.Drawing.Point(248, 39);
+            this.buttonIdentify.Location = new System.Drawing.Point(237, 39);
             this.buttonIdentify.Margin = new System.Windows.Forms.Padding(4);
             this.buttonIdentify.Name = "buttonIdentify";
             this.buttonIdentify.Size = new System.Drawing.Size(132, 52);
@@ -73,11 +73,12 @@
             // 
             this.labelResult.AutoSize = true;
             this.labelResult.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-            this.labelResult.Font = new System.Drawing.Font("SimSun", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.labelResult.Font = new System.Drawing.Font("Arial Rounded MT Bold", 13.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.labelResult.Location = new System.Drawing.Point(134, 117);
             this.labelResult.Name = "labelResult";
-            this.labelResult.Size = new System.Drawing.Size(2, 22);
+            this.labelResult.Size = new System.Drawing.Size(86, 29);
             this.labelResult.TabIndex = 4;
+            this.labelResult.Text = "待识别";
             // 
             // label1
             // 
@@ -91,7 +92,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(34, 121);
+            this.label2.Location = new System.Drawing.Point(34, 126);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(82, 15);
             this.label2.TabIndex = 6;
@@ -101,7 +102,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1028, 659);
+            this.ClientSize = new System.Drawing.Size(1028, 429);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.labelResult);
