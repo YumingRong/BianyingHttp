@@ -47,8 +47,10 @@ namespace WindowsFormsApp1
             webRequest.Method = "GET";
             HttpWebResponse webResponse = (HttpWebResponse)webRequest.GetResponse();
             StreamReader sr = new StreamReader(webResponse.GetResponseStream(), encoding);
-            return sr.ReadToEnd();
-
+            string result = sr.ReadToEnd();
+            webResponse.Close();
+            sr.Close();
+            return result;
         }
 
 

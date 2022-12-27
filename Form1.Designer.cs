@@ -34,6 +34,12 @@
             this.labelResult = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
+            this.labelRespondTime = new System.Windows.Forms.Label();
+            this.label4 = new System.Windows.Forms.Label();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.radioSingle = new System.Windows.Forms.RadioButton();
+            this.radioContinuous = new System.Windows.Forms.RadioButton();
+            this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
             // textHttp
@@ -50,7 +56,7 @@
             // buttonIdentify
             // 
             this.buttonIdentify.Font = new System.Drawing.Font("SimSun", 21.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.buttonIdentify.Location = new System.Drawing.Point(237, 39);
+            this.buttonIdentify.Location = new System.Drawing.Point(557, 45);
             this.buttonIdentify.Margin = new System.Windows.Forms.Padding(4);
             this.buttonIdentify.Name = "buttonIdentify";
             this.buttonIdentify.Size = new System.Drawing.Size(132, 52);
@@ -71,7 +77,6 @@
             // 
             // labelResult
             // 
-            this.labelResult.AutoSize = true;
             this.labelResult.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
             this.labelResult.Font = new System.Drawing.Font("Arial Rounded MT Bold", 13.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.labelResult.Location = new System.Drawing.Point(134, 117);
@@ -98,11 +103,65 @@
             this.label2.TabIndex = 6;
             this.label2.Text = "衬套字码：";
             // 
+            // labelRespondTime
+            // 
+            this.labelRespondTime.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+            this.labelRespondTime.Font = new System.Drawing.Font("Arial Rounded MT Bold", 13.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.labelRespondTime.Location = new System.Drawing.Point(438, 117);
+            this.labelRespondTime.Name = "labelRespondTime";
+            this.labelRespondTime.Size = new System.Drawing.Size(86, 29);
+            this.labelRespondTime.TabIndex = 7;
+            this.labelRespondTime.Text = "000";
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(277, 126);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(142, 15);
+            this.label4.TabIndex = 8;
+            this.label4.Text = "识别时间（毫秒）：";
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.radioSingle);
+            this.groupBox1.Controls.Add(this.radioContinuous);
+            this.groupBox1.Location = new System.Drawing.Point(236, 39);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(228, 54);
+            this.groupBox1.TabIndex = 9;
+            this.groupBox1.TabStop = false;
+            // 
+            // radioSingle
+            // 
+            this.radioSingle.AutoSize = true;
+            this.radioSingle.Checked = true;
+            this.radioSingle.Location = new System.Drawing.Point(122, 24);
+            this.radioSingle.Name = "radioSingle";
+            this.radioSingle.Size = new System.Drawing.Size(88, 19);
+            this.radioSingle.TabIndex = 1;
+            this.radioSingle.TabStop = true;
+            this.radioSingle.Text = "单次识别";
+            this.radioSingle.UseVisualStyleBackColor = true;
+            // 
+            // radioContinuous
+            // 
+            this.radioContinuous.AutoSize = true;
+            this.radioContinuous.Location = new System.Drawing.Point(15, 24);
+            this.radioContinuous.Name = "radioContinuous";
+            this.radioContinuous.Size = new System.Drawing.Size(88, 19);
+            this.radioContinuous.TabIndex = 0;
+            this.radioContinuous.Text = "连续识别";
+            this.radioContinuous.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1028, 429);
+            this.Controls.Add(this.groupBox1);
+            this.Controls.Add(this.label4);
+            this.Controls.Add(this.labelRespondTime);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.labelResult);
@@ -114,6 +173,8 @@
             this.Name = "Form1";
             this.Text = "衬套字码识别";
             this.Load += new System.EventHandler(this.Form1_Load);
+            this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -127,6 +188,11 @@
         private System.Windows.Forms.Label labelResult;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Label labelRespondTime;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.RadioButton radioSingle;
+        private System.Windows.Forms.RadioButton radioContinuous;
     }
 }
 
