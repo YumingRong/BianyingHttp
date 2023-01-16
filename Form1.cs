@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Text.Json;
 using System.Net;
+using System.Diagnostics;
+using System.Xml.Linq;
 
 namespace WindowsFormsApp1
 {
@@ -19,38 +21,20 @@ namespace WindowsFormsApp1
             InitializeComponent();
         }
 
-        delegate void updateColorDelegate(Color obj);
-        private void updateColorInDelegate(Color c)
+        private void updateCountInDelegate(int n)
         {
-            textHttp.BackColor = c;
+            labelRespondTimes.Text = n.ToString();
         }
 
-        private void updateColorInThread(Color c)
+        delegate void updateCountDelegate(int n);
+        private void updateCountInInThread(int n)
         {
-            updateColorDelegate d = new updateColorDelegate(updateColorInDelegate);
-            this.Invoke(d, c);
+            this.BeginInvoke(new updateCountDelegate(updateCountInDelegate), n);
         }
 
 
         private void Form1_Load(object sender, EventArgs e)
         {
-        }
-
-        private void buttonConnect_Click(object sender, EventArgs e)
-        {
-        }
-
-        private static string SendRequest(string url,Encoding encoding)
-        {
-            url = "http://" + url + ":8080/json";
-            HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url);
-            webRequest.Method = "GET";
-            HttpWebResponse webResponse = (HttpWebResponse)webRequest.GetResponse();
-            StreamReader sr = new StreamReader(webResponse.GetResponseStream(), encoding);
-            string result = sr.ReadToEnd();
-            webResponse.Close();
-            sr.Close();
-            return result;
         }
 
 
@@ -124,6 +108,7 @@ namespace WindowsFormsApp1
             public double centerX { get; set; }
             public double centerY { get; set; }
         }
+
         // X坐标比较器
         class XComparer : IComparer<DetectionObject>
         {
@@ -137,37 +122,133 @@ namespace WindowsFormsApp1
 
         }
 
-
-        private void buttonIdentify_Click(object sender, EventArgs e)
+        private static string SendRequest(string url)
         {
-            textHttp.Text = SendRequest(comboBox1.Text, Encoding.UTF8);
-            string indata = textHttp.Text.Trim();
-            if (indata.StartsWith("{"))
+            HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create("http://" + url + ":8080/json?score");
+            webRequest.Method = "GET";
+            HttpWebResponse webResponse = (HttpWebResponse)webRequest.GetResponse();
+            Stream readStream = webResponse.GetResponseStream();
+            string result = "";
+            if (readStream.CanRead)
             {
+                StreamReader sr = new StreamReader(readStream, Encoding.UTF8);
+                result = sr.ReadToEnd();
+                sr.Close();
+            }
+            webResponse.Close();
+            return result;
+        }
+
+        private void buttonSingleRead_Click(object sender, EventArgs e)
+        {
+            buttonSingleRead.Enabled = false;
+            textJson.Text = SendRequest(comboBox1.Text);
+            string indata = textJson.Text.Trim();
+            StringBuilder sb = new StringBuilder();
+            StringBuilder dc = new StringBuilder(); //detection confidence
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
+            try
+            {
+                DetectionResults Result = JsonSerializer.Deserialize<DetectionResults>(indata);
+                if (Result.results.Count() > 0)
+                {
+                    Result.results.Sort(new XComparer());
+                    foreach (DetectionObject obj in Result.results)
+                    {
+                        sb.Append(obj.name);
+                        dc.Append(obj.name);
+                        dc.Append('\t');
+                        dc.Append(obj.score);
+                        dc.Append("\r\n");
+                    }
+                    labelGetCode.Text = sb.ToString();
+                    textCode.Text = dc.ToString();
+                }
+            }
+            catch
+            {
+                labelGetCode.BackColor = Color.Red;
+            }
+
+            stopwatch.Stop();
+            labelTestTime.Text = stopwatch.ElapsedMilliseconds.ToString();
+            string target_code = textBoxSetCode.Text.Trim();
+            if (target_code.Length == 0)
+                labelGetCode.BackColor = Color.LightGray;
+            if (String.Equals(sb.ToString(), target_code))
+                labelGetCode.BackColor = Color.LightGreen;
+            else
+                labelGetCode.BackColor = Color.LightPink;
+            labelRespondTimes.Text = "1";
+            buttonSingleRead.Enabled = true;
+        }
+
+        private void buttonContinuousRead_Click(object sender, EventArgs e)
+        {
+            buttonContinuousRead.Enabled = false;
+            string target_code = textBoxSetCode.Text.Trim();
+            StringBuilder sb = new StringBuilder();
+            StringBuilder dc = new StringBuilder(); //detection confidence
+            int requestTimes = 0;
+            int respondTimes = 0;
+            labelGetCode.Text = "";
+            textCode.Text = "";
+            string indata;
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
+            do
+            {
+                requestTimes++;
+                indata = SendRequest(comboBox1.Text);
+                if (!indata.StartsWith("{"))
+                {
+                    labelRequestTimes.Invoke(new Action<int>(i => { labelRequestTimes.Text = i.ToString(); }), requestTimes);
+                    labelTestTime.Invoke(new Action<long>(i => { labelTestTime.Text = i.ToString(); }), stopwatch.ElapsedMilliseconds);
+                    continue;
+                }
+
                 try
                 {
+                    labelRespondTimes.Invoke(new Action<int>(i => { labelRespondTimes.Text = i.ToString(); }), respondTimes);
                     DetectionResults Result = JsonSerializer.Deserialize<DetectionResults>(indata);
                     if (Result.results.Count() > 0)
                     {
-                        StringBuilder sb = new StringBuilder();
+                        respondTimes++;
+                        sb.Clear();
+                        dc.Clear();
                         Result.results.Sort(new XComparer());
                         foreach (DetectionObject obj in Result.results)
+                        {
                             sb.Append(obj.name);
-                        labelResult.Text = sb.ToString();
+                            dc.Append(obj.name);
+                            dc.Append('\t');
+                            dc.Append(obj.score);
+                            dc.Append("\r\n");
+                        }
+                        labelGetCode.Invoke(new Action<string>(s => { labelGetCode.Text = s; }), sb.ToString());
+                        textCode.Text = dc.ToString();
                     }
                 }
                 catch
                 {
-                    updateColorInThread(Color.LightPink);
+                    labelGetCode.BackColor = Color.Red;
                 }
+            } while (sb.ToString().Length < target_code.Length && stopwatch.Elapsed.Seconds < Convert.ToInt32(textBoxTimeout.Text));
 
-            }
-            else if (indata == "~TakePhoto")
-            {
-                updateColorInThread(Color.LightBlue);
-            }
-
+            stopwatch.Stop();
+            labelTestTime.Text = stopwatch.ElapsedMilliseconds.ToString();
+            labelRespondTimes.Text = respondTimes.ToString();
+            labelRequestTimes.Text = requestTimes.ToString();
+            labelAverageTime.Text = Convert.ToString(stopwatch.ElapsedMilliseconds / respondTimes);
+            labelGetCode.Text = sb.ToString();
+            textJson.Text = indata;
+            if (String.Equals(sb.ToString(), target_code))
+                labelGetCode.BackColor = Color.LightGreen;
+            else
+                labelGetCode.BackColor = Color.LightPink;
+            buttonContinuousRead.Enabled = true;
         }
-
     }
 }
