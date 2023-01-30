@@ -158,7 +158,7 @@
             this.textBoxSetCode.Name = "textBoxSetCode";
             this.textBoxSetCode.Size = new System.Drawing.Size(137, 25);
             this.textBoxSetCode.TabIndex = 11;
-            this.textBoxSetCode.Text = "2182S";
+            this.textBoxSetCode.Text = "2250S";
             // 
             // label5
             // 
@@ -206,7 +206,7 @@
             this.textBoxTimeout.Name = "textBoxTimeout";
             this.textBoxTimeout.Size = new System.Drawing.Size(86, 25);
             this.textBoxTimeout.TabIndex = 16;
-            this.textBoxTimeout.Text = "6";
+            this.textBoxTimeout.Text = "16";
             // 
             // label7
             // 

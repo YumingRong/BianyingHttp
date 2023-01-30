@@ -11,27 +11,18 @@ using System.Text.Json;
 using System.Net;
 using System.Diagnostics;
 using System.Xml.Linq;
+using System.Net.Http;
 
 namespace WindowsFormsApp1
 {
     public partial class Form1 : Form
     {
+        private readonly static HttpClient _httpClient = new HttpClient();
+
         public Form1()
         {
             InitializeComponent();
         }
-
-        private void updateCountInDelegate(int n)
-        {
-            labelRespondTimes.Text = n.ToString();
-        }
-
-        delegate void updateCountDelegate(int n);
-        private void updateCountInInThread(int n)
-        {
-            this.BeginInvoke(new updateCountDelegate(updateCountInDelegate), n);
-        }
-
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -44,60 +35,18 @@ namespace WindowsFormsApp1
             public int error_code { get; set; }
             public string log_image { get; set; }
             public List<DetectionObject> results { get; set; }
-
-
         }
 
         public class DetectionObject
         {
-            string _Name = "";
-            double _score = 0;
             public string name
             {
-                get
-                {
-                    return _Name;
-                }
-                set
-                {
-                    _Name = value;
-                }
-
-            }
-            public string label
-            {
-                get
-                {
-                    return _Name;
-                }
-                set
-                {
-                    _Name = value;
-                }
-
-            }
-            public double confidence
-            {
-                get
-                {
-                    return _score;
-                }
-                set
-                {
-                    _score = value;
-                }
+                get; set;
 
             }
             public double score
             {
-                get
-                {
-                    return _score;
-                }
-                set
-                {
-                    _score = value;
-                }
+                get; set;
             }
             public double left { get; set; }
             public double top { get; set; }
@@ -122,32 +71,38 @@ namespace WindowsFormsApp1
 
         }
 
-        private static string SendRequest(string url)
+        private static async Task<string> SendRequestAsync(string url)
         {
-            HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create("http://" + url + ":8080/json?score");
-            webRequest.Method = "GET";
-            HttpWebResponse webResponse = (HttpWebResponse)webRequest.GetResponse();
-            Stream readStream = webResponse.GetResponseStream();
-            string result = "";
-            if (readStream.CanRead)
+            string stringData;
+            try
             {
-                StreamReader sr = new StreamReader(readStream, Encoding.UTF8);
-                result = sr.ReadToEnd();
-                sr.Close();
+                stringData = await _httpClient.GetStringAsync($"http://{url}:8080/json?score");
             }
-            webResponse.Close();
-            return result;
+            catch (InvalidOperationException)
+            {
+                return "The requestUri must be an absoute URI or BaseAddress must be set";
+            }
+            catch (HttpRequestException)
+            {
+                return "The request failed due to an underlying issue such as network connectivity DNS failure, server certificate validation.";
+            }
+            catch (TaskCanceledException)
+            {
+                return "The request fialed due to timeout";
+            }
+            return stringData;
         }
 
-        private void buttonSingleRead_Click(object sender, EventArgs e)
+        private async void buttonSingleRead_Click(object sender, EventArgs e)
         {
             buttonSingleRead.Enabled = false;
-            textJson.Text = SendRequest(comboBox1.Text);
+            buttonContinuousRead.Enabled = false;
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            textJson.Text = await SendRequestAsync(comboBox1.Text);
             string indata = textJson.Text.Trim();
             StringBuilder sb = new StringBuilder();
             StringBuilder dc = new StringBuilder(); //detection confidence
 
-            Stopwatch stopwatch = Stopwatch.StartNew();
 
             try
             {
@@ -183,11 +138,16 @@ namespace WindowsFormsApp1
                 labelGetCode.BackColor = Color.LightPink;
             labelRespondTimes.Text = "1";
             buttonSingleRead.Enabled = true;
+            buttonContinuousRead.Enabled = true;
         }
 
-        private void buttonContinuousRead_Click(object sender, EventArgs e)
+
+        private async void buttonContinuousRead_Click(object sender, EventArgs e)
         {
             buttonContinuousRead.Enabled = false;
+            buttonSingleRead.Enabled = false;
+            labelGetCode.BackColor= Color.LightGray;
+            Stopwatch stopwatch = Stopwatch.StartNew();
             string target_code = textBoxSetCode.Text.Trim();
             StringBuilder sb = new StringBuilder();
             StringBuilder dc = new StringBuilder(); //detection confidence
@@ -196,22 +156,24 @@ namespace WindowsFormsApp1
             labelGetCode.Text = "";
             textCode.Text = "";
             string indata;
-            Stopwatch stopwatch = Stopwatch.StartNew();
+            List<DetectionResults> results = new List<DetectionResults>();
 
             do
             {
                 requestTimes++;
-                indata = SendRequest(comboBox1.Text);
+                indata = await SendRequestAsync(comboBox1.Text);
+                textJson.Text = indata;
                 if (!indata.StartsWith("{"))
                 {
-                    labelRequestTimes.Invoke(new Action<int>(i => { labelRequestTimes.Text = i.ToString(); }), requestTimes);
-                    labelTestTime.Invoke(new Action<long>(i => { labelTestTime.Text = i.ToString(); }), stopwatch.ElapsedMilliseconds);
+
+                    labelRequestTimes.Text = respondTimes.ToString();
+                    labelTestTime.Text = stopwatch.ElapsedMilliseconds.ToString();
                     continue;
                 }
 
                 try
                 {
-                    labelRespondTimes.Invoke(new Action<int>(i => { labelRespondTimes.Text = i.ToString(); }), respondTimes);
+                    labelRespondTimes.Text = respondTimes.ToString();
                     DetectionResults Result = JsonSerializer.Deserialize<DetectionResults>(indata);
                     if (Result.results.Count() > 0)
                     {
@@ -227,28 +189,69 @@ namespace WindowsFormsApp1
                             dc.Append(obj.score);
                             dc.Append("\r\n");
                         }
-                        labelGetCode.Invoke(new Action<string>(s => { labelGetCode.Text = s; }), sb.ToString());
+                        labelGetCode.Text = sb.ToString();
                         textCode.Text = dc.ToString();
+                        results.Add(Result);
                     }
                 }
                 catch
                 {
                     labelGetCode.BackColor = Color.Red;
                 }
-            } while (sb.ToString().Length < target_code.Length && stopwatch.Elapsed.Seconds < Convert.ToInt32(textBoxTimeout.Text));
+            } while (!String.Equals(sb.ToString(), target_code) && stopwatch.Elapsed.Seconds < Convert.ToInt32(textBoxTimeout.Text));
 
             stopwatch.Stop();
             labelTestTime.Text = stopwatch.ElapsedMilliseconds.ToString();
             labelRespondTimes.Text = respondTimes.ToString();
             labelRequestTimes.Text = requestTimes.ToString();
-            labelAverageTime.Text = Convert.ToString(stopwatch.ElapsedMilliseconds / respondTimes);
-            labelGetCode.Text = sb.ToString();
-            textJson.Text = indata;
-            if (String.Equals(sb.ToString(), target_code))
-                labelGetCode.BackColor = Color.LightGreen;
+            if (respondTimes > 0)
+                labelAverageTime.Text = Convert.ToString(stopwatch.ElapsedMilliseconds / respondTimes);
             else
+                labelAverageTime.Text = "N/A";
+            if (String.Equals(sb.ToString(), target_code))
+            {
+                labelGetCode.BackColor = Color.LightGreen;
+                labelGetCode.Text = sb.ToString();
+            }
+            else
+            {
                 labelGetCode.BackColor = Color.LightPink;
+                DetectionResults minR = null;
+                double minminC = 0;
+                foreach (DetectionResults r in results)
+                {
+                    double minC = 0;
+                    foreach (DetectionObject o in r.results)
+                    {
+                        if (o.score > minC)
+                            minC = o.score;
+                    }
+                    if (minC > minminC)
+                    {
+                        minminC = minC;
+                        minR = r;
+                    }
+                }
+
+                sb.Clear();
+                dc.Clear();
+                if (minR != null)
+                {
+                    minR.results.Sort(new XComparer());
+                    foreach (DetectionObject obj in minR.results)
+                    {
+                        sb.Append(obj.name);
+                        dc.Append(obj.name);
+                        dc.Append('\t');
+                        dc.Append(obj.score);
+                        dc.Append("\r\n");
+                    }
+                    labelGetCode.Text = sb.ToString();
+                    textCode.Text = dc.ToString();
+                }
+            }
             buttonContinuousRead.Enabled = true;
+            buttonSingleRead.Enabled = true;
         }
     }
 }
